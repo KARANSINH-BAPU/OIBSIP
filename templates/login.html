@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NOVA — Sign In</title>
+  <meta name="description" content="Sign in to NOVA, your advanced AI voice assistant.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#04040f; --cyan:#6ee7f7; --purple:#a78bfa; --pink:#f472b6;
+      --surface:rgba(255,255,255,0.04); --border:rgba(255,255,255,0.08);
+      --text:#e2e8f0; --muted:#64748b; --success:#34d399; --error:#f87171;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+
+    /* Ambient orbs */
+    .orb{position:fixed;border-radius:50%;filter:blur(100px);opacity:.18;pointer-events:none;}
+    .o1{width:600px;height:600px;background:radial-gradient(circle,#6ee7f7,transparent);top:-200px;left:-150px;animation:float 10s ease-in-out infinite;}
+    .o2{width:500px;height:500px;background:radial-gradient(circle,#a78bfa,transparent);bottom:-150px;right:-100px;animation:float 12s ease-in-out infinite reverse;}
+    .o3{width:350px;height:350px;background:radial-gradient(circle,#f472b6,transparent);top:50%;left:60%;animation:float 9s ease-in-out infinite 2s;}
+    @keyframes float{0%,100%{transform:translate(0,0)}50%{transform:translate(20px,-30px)}}
+
+    canvas{position:fixed;inset:0;z-index:0;pointer-events:none;}
+
+    /* Card */
+    .auth-card{
+      position:relative;z-index:1;
+      width:420px;max-width:95vw;
+      background:rgba(255,255,255,0.04);
+      border:1px solid var(--border);
+      border-radius:24px;padding:40px 36px;
+      backdrop-filter:blur(24px);
+      box-shadow:0 24px 64px rgba(0,0,0,.5);
+    }
+
+    /* Logo */
+    .logo{display:flex;align-items:center;gap:12px;margin-bottom:32px;justify-content:center;}
+    .logo-ring{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--purple));display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 0 30px rgba(110,231,247,.3);}
+    .logo-name{font-size:1.8rem;font-weight:800;background:linear-gradient(135deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+    /* Tabs */
+    .auth-tabs{display:flex;background:rgba(255,255,255,0.04);border-radius:50px;padding:4px;margin-bottom:28px;border:1px solid var(--border);}
+    .tab-btn{flex:1;padding:9px;border:none;border-radius:50px;background:transparent;color:var(--muted);cursor:pointer;font-family:'Outfit',sans-serif;font-size:.9rem;font-weight:500;transition:all .25s;}
+    .tab-btn.active{background:linear-gradient(135deg,var(--cyan),var(--purple));color:#0a0a1a;font-weight:700;}
+
+    /* Forms */
+    .auth-form{display:none;flex-direction:column;gap:14px;}
+    .auth-form.active{display:flex;}
+
+    .field-label{font-size:.78rem;color:var(--muted);margin-bottom:4px;font-weight:500;letter-spacing:.5px;}
+    .input-wrap{position:relative;}
+    .input-wrap .icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:1rem;pointer-events:none;}
+    .form-input{
+      width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);
+      border-radius:12px;padding:12px 14px 12px 40px;
+      color:var(--text);font-family:'Outfit',sans-serif;font-size:.9rem;outline:none;
+      transition:border-color .2s,box-shadow .2s;
+    }
+    .form-input:focus{border-color:rgba(110,231,247,.4);box-shadow:0 0 20px rgba(110,231,247,.08);}
+    .form-input::placeholder{color:var(--muted);}
+
+    /* Password toggle */
+    .toggle-pass{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:1rem;transition:color .2s;}
+    .toggle-pass:hover{color:var(--cyan);}
+
+    /* Forgot */
+    .forgot{text-align:right;font-size:.78rem;color:var(--muted);cursor:pointer;text-decoration:none;transition:color .2s;}
+    .forgot:hover{color:var(--cyan);}
+
+    /* Submit btn */
+    .submit-btn{
+      padding:13px;border-radius:12px;border:none;cursor:pointer;
+      background:linear-gradient(135deg,var(--cyan),var(--purple));
+      color:#0a0a1a;font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:700;
+      transition:all .25s;margin-top:4px;
+      box-shadow:0 0 24px rgba(110,231,247,.2);
+    }
+    .submit-btn:hover{transform:translateY(-2px);box-shadow:0 0 40px rgba(110,231,247,.35);}
+    .submit-btn:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+
+    /* Divider */
+    .divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:.8rem;}
+    .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+
+    /* Google btn */
+    .google-btn{
+      display:flex;align-items:center;justify-content:center;gap:10px;
+      padding:12px;border-radius:12px;
+      border:1px solid var(--border);background:rgba(255,255,255,0.04);
+      color:var(--text);cursor:pointer;font-family:'Outfit',sans-serif;
+      font-size:.9rem;font-weight:500;transition:all .25s;
+    }
+    .google-btn:hover{border-color:rgba(110,231,247,.3);background:rgba(110,231,247,.05);transform:translateY(-1px);}
+    .google-btn img{width:20px;height:20px;}
+
+    /* Error/Success msg */
+    .auth-msg{
+      padding:10px 14px;border-radius:10px;font-size:.82rem;text-align:center;
+      display:none;animation:slideIn .3s ease;
+    }
+    .auth-msg.error{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--error);display:block;}
+    .auth-msg.success{background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);color:var(--success);display:block;}
+    @keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Loading spinner in btn */
+    .spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(10,10,26,.3);border-top-color:#0a0a1a;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .terms{font-size:.75rem;color:var(--muted);text-align:center;line-height:1.5;}
+    .terms a{color:var(--cyan);text-decoration:none;}
+  </style>
+</head>
+<body>
+  <div class="orb o1"></div>
+  <div class="orb o2"></div>
+  <div class="orb o3"></div>
+  <canvas id="pc"></canvas>
+
+  <div class="auth-card">
+    <div class="logo">
+      <div class="logo-ring">🤖</div>
+      <span class="logo-name">NOVA</span>
+    </div>
+
+    <!-- Tabs -->
+    <div class="auth-tabs">
+      <button class="tab-btn active" id="tabSignIn" onclick="switchAuthTab('signin')">Sign In</button>
+      <button class="tab-btn" id="tabSignUp" onclick="switchAuthTab('signup')">Sign Up</button>
+    </div>
+
+    <!-- Auth Message -->
+    <div class="auth-msg" id="authMsg"></div>
+
+    <!-- Sign In Form -->
+    <form class="auth-form active" id="formSignIn" onsubmit="handleSignIn(event)">
+      <div>
+        <div class="field-label">Email Address</div>
+        <div class="input-wrap">
+          <span class="icon">📧</span>
+          <input class="form-input" id="siEmail" type="email" placeholder="you@email.com" required autocomplete="email">
+        </div>
+      </div>
+      <div>
+        <div class="field-label">Password</div>
+        <div class="input-wrap">
+          <span class="icon">🔒</span>
+          <input class="form-input" id="siPass" type="password" placeholder="••••••••" required autocomplete="current-password">
+          <button type="button" class="toggle-pass" onclick="togglePwd('siPass',this)">👁️</button>
+        </div>
+      </div>
+      <a class="forgot" onclick="handleForgotPassword()">Forgot password?</a>
+      <button class="submit-btn" id="btnSignIn" type="submit">Sign In →</button>
+      <div class="divider">or continue with</div>
+      <button type="button" class="google-btn" onclick="handleGoogleSignIn()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+        Continue with Google
+      </button>
+    </form>
+
+    <!-- Sign Up Form -->
+    <form class="auth-form" id="formSignUp" onsubmit="handleSignUp(event)">
+      <div>
+        <div class="field-label">Full Name</div>
+        <div class="input-wrap">
+          <span class="icon">👤</span>
+          <input class="form-input" id="suName" type="text" placeholder="Your name" required>
+        </div>
+      </div>
+      <div>
+        <div class="field-label">Email Address</div>
+        <div class="input-wrap">
+          <span class="icon">📧</span>
+          <input class="form-input" id="suEmail" type="email" placeholder="you@email.com" required autocomplete="email">
+        </div>
+      </div>
+      <div>
+        <div class="field-label">Password</div>
+        <div class="input-wrap">
+          <span class="icon">🔒</span>
+          <input class="form-input" id="suPass" type="password" placeholder="Min 6 characters" required minlength="6">
+          <button type="button" class="toggle-pass" onclick="togglePwd('suPass',this)">👁️</button>
+        </div>
+      </div>
+      <div>
+        <div class="field-label">Confirm Password</div>
+        <div class="input-wrap">
+          <span class="icon">🔒</span>
+          <input class="form-input" id="suPass2" type="password" placeholder="Repeat password" required>
+        </div>
+      </div>
+      <button class="submit-btn" id="btnSignUp" type="submit">Create Account ✨</button>
+      <div class="divider">or continue with</div>
+      <button type="button" class="google-btn" onclick="handleGoogleSignIn()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+        Continue with Google
+      </button>
+      <p class="terms">By signing up you agree to our <a href="#">Terms</a> & <a href="#">Privacy Policy</a></p>
+    </form>
+  </div>
+
+  <!-- Firebase SDK (module) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+      signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail,
+      updateProfile, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, serverTimestamp }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDvp5JaY4k8t5v9pISsCbfntH81efncUtY",
+      authDomain: "voice-assistance-bb80c.firebaseapp.com",
+      projectId: "voice-assistance-bb80c",
+      storageBucket: "voice-assistance-bb80c.firebasestorage.app",
+      messagingSenderId: "904334469262",
+      appId: "1:904334469262:web:b9519babed5cc8435081df",
+      measurementId: "G-ZY2D17RHMS",
+      databaseURL: "https://voice-assistance-bb80c-default-rtdb.firebaseio.com"
+    };
+
+    const app       = initializeApp(firebaseConfig);
+    const auth      = getAuth(app);
+    const db        = getFirestore(app);
+    const analytics = getAnalytics(app);
+    const gProvider = new GoogleAuthProvider();
+
+    function logAuthEvent(name, params = {}) {
+      try { logEvent(analytics, name, { app: 'NOVA', ...params }); } catch (_) {}
+    }
+    logAuthEvent('page_view', { page: 'login' });
+
+    // Redirect if already logged in
+    onAuthStateChanged(auth, user => {
+      if (user) window.location.href = '/';
+    });
+
+    // Create/update user profile in Firestore
+    async function ensureUserDoc(user, displayName) {
+      const ref = doc(db, 'users', user.uid);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) {
+        await setDoc(ref, {
+          uid: user.uid,
+          email: user.email,
+          displayName: displayName || user.displayName || 'NOVA User',
+          createdAt: serverTimestamp(),
+          defaultCity: 'Mumbai',
+          settings: { tts: true, theme: 'dark' }
+        });
+      }
+    }
+
+    // ── Sign In ──
+    window.handleSignIn = async (e) => {
+      e.preventDefault();
+      setBtnLoading('btnSignIn', true);
+      clearMsg();
+      try {
+        const { user } = await signInWithEmailAndPassword(
+          auth,
+          document.getElementById('siEmail').value.trim(),
+          document.getElementById('siPass').value
+        );
+        await ensureUserDoc(user);
+        logAuthEvent('login', { method: 'email' });
+        showMsg('Welcome back! Redirecting...', 'success');
+        setTimeout(() => window.location.href = '/', 800);
+      } catch (err) {
+        showMsg(friendlyError(err.code), 'error');
+      } finally { setBtnLoading('btnSignIn', false); }
+    };
+
+    // ── Sign Up ──
+    window.handleSignUp = async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('suName').value.trim();
+      const email = document.getElementById('suEmail').value.trim();
+      const pass  = document.getElementById('suPass').value;
+      const pass2 = document.getElementById('suPass2').value;
+      if (pass !== pass2) { showMsg('Passwords do not match!', 'error'); return; }
+      setBtnLoading('btnSignUp', true);
+      clearMsg();
+      try {
+        const { user } = await createUserWithEmailAndPassword(auth, email, pass);
+        await updateProfile(user, { displayName: name });
+        await ensureUserDoc(user, name);
+        logAuthEvent('sign_up', { method: 'email' });
+        showMsg('Account created! Welcome to NOVA!', 'success');
+        setTimeout(() => window.location.href = '/', 1000);
+      } catch (err) {
+        showMsg(friendlyError(err.code), 'error');
+      } finally { setBtnLoading('btnSignUp', false); }
+    };
+
+    // ── Google Sign In ──
+    window.handleGoogleSignIn = async () => {
+      clearMsg();
+      try {
+        const { user } = await signInWithPopup(auth, gProvider);
+        await ensureUserDoc(user);
+        logAuthEvent('login', { method: 'google' });
+        showMsg('Signed in with Google! Redirecting...', 'success');
+        setTimeout(() => window.location.href = '/', 800);
+      } catch (err) {
+        if (err.code !== 'auth/popup-closed-by-user')
+          showMsg(friendlyError(err.code), 'error');
+      }
+    };
+
+    // ── Forgot Password ──
+    window.handleForgotPassword = async () => {
+      const email = document.getElementById('siEmail').value.trim();
+      if (!email) { showMsg('Enter your email above first.', 'error'); return; }
+      try {
+        await sendPasswordResetEmail(auth, email);
+        showMsg('Reset email sent! Check your inbox.', 'success');
+      } catch (err) {
+        showMsg(friendlyError(err.code), 'error');
+      }
+    };
+  </script>
+
+  <script>
+    // ── Tab switching ──
+    function switchAuthTab(tab) {
+      document.getElementById('formSignIn').classList.toggle('active', tab==='signin');
+      document.getElementById('formSignUp').classList.toggle('active', tab==='signup');
+      document.getElementById('tabSignIn').classList.toggle('active', tab==='signin');
+      document.getElementById('tabSignUp').classList.toggle('active', tab==='signup');
+      clearMsg();
+    }
+
+    // ── Password visibility toggle ──
+    function togglePwd(id, btn) {
+      const inp = document.getElementById(id);
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+      btn.textContent = inp.type === 'password' ? '👁️' : '🙈';
+    }
+
+    // ── Messages ──
+    function showMsg(msg, type) {
+      const el = document.getElementById('authMsg');
+      el.textContent = msg; el.className = 'auth-msg ' + type;
+    }
+    function clearMsg() {
+      const el = document.getElementById('authMsg');
+      el.textContent = ''; el.className = 'auth-msg';
+    }
+
+    // ── Button loading state ──
+    function setBtnLoading(id, loading) {
+      const btn = document.getElementById(id);
+      btn.disabled = loading;
+      if (loading) btn.innerHTML = '<span class="spin"></span> Please wait...';
+      else btn.textContent = id === 'btnSignIn' ? 'Sign In →' : 'Create Account ✨';
+    }
+
+    // ── Firebase error → friendly messages ──
+    function friendlyError(code) {
+      const map = {
+        'auth/user-not-found': 'No account found with this email.',
+        'auth/wrong-password': 'Incorrect password. Try again.',
+        'auth/email-already-in-use': 'This email is already registered.',
+        'auth/invalid-email': 'Please enter a valid email address.',
+        'auth/weak-password': 'Password must be at least 6 characters.',
+        'auth/too-many-requests': 'Too many attempts. Please wait a moment.',
+        'auth/network-request-failed': 'Network error. Check your connection.',
+        'auth/invalid-credential': 'Invalid email or password.',
+      };
+      return map[code] || 'Something went wrong. Please try again.';
+    }
+
+    // ── Particle canvas ──
+    const canvas = document.getElementById('pc');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+    const pts = Array.from({length:60}, () => ({
+      x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+      vx:(Math.random()-.5)*.4, vy:(Math.random()-.5)*.4,
+      r:Math.random()*1.5+.5, c:Math.random()>.5?'110,231,247':'167,139,250'
+    }));
+    function animPts() {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      pts.forEach(p => {
+        p.x+=p.vx; p.y+=p.vy;
+        if(p.x<0||p.x>canvas.width) p.vx*=-1;
+        if(p.y<0||p.y>canvas.height) p.vy*=-1;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fillStyle=`rgba(${p.c},.4)`; ctx.fill();
+      });
+      requestAnimationFrame(animPts);
+    }
+    animPts();
+  </script>
+</body>
+</html>

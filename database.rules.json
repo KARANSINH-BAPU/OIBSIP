@@ -1,0 +1,19 @@
+{
+  "rules": {
+    "presence": {
+      "$uid": {
+        ".read": true,
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "analytics": {
+      "realtime": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "events": {
+          ".indexOn": ["ts", "event"]
+        }
+      }
+    }
+  }
+}
