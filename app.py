@@ -8,8 +8,21 @@ import json
 import threading
 import datetime
 import time
-import speech_recognition as sr
-import pyttsx3
+
+# ── Hardware-dependent libs — skipped on Vercel/cloud (no mic/speaker) ──
+try:
+    import speech_recognition as sr
+    SR_AVAILABLE = True
+except ImportError:
+    sr = None
+    SR_AVAILABLE = False
+
+try:
+    import pyttsx3
+    TTS_AVAILABLE = True
+except ImportError:
+    pyttsx3 = None
+    TTS_AVAILABLE = False
 from pathlib import Path
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
@@ -56,17 +69,20 @@ reminders_store = []
 conversation_history = []
 tts_engine = None
 tts_lock = threading.Lock()
-recognizer = sr.Recognizer()
+recognizer = sr.Recognizer() if SR_AVAILABLE else None
 is_listening = False
 listen_thread = None
 
 # ─── TTS Engine ───────────────────────────────────────────────────────────────
 def init_tts():
     global tts_engine
+    if not TTS_AVAILABLE:
+        print("[INFO] pyttsx3 not available (cloud/serverless env) — TTS skipped")
+        tts_engine = None
+        return
     try:
         tts_engine = pyttsx3.init()
         voices = tts_engine.getProperty("voices")
-        # Prefer a female voice if available
         for voice in voices:
             if "female" in voice.name.lower() or "zira" in voice.name.lower() or "helena" in voice.name.lower():
                 tts_engine.setProperty("voice", voice.id)
@@ -98,6 +114,8 @@ def speak(text: str):
 # ─── Speech Recognition ───────────────────────────────────────────────────────
 def listen_once() -> str:
     """Listen for one voice command and return transcribed text."""
+    if not SR_AVAILABLE:
+        return "__error__: Voice recognition not available in cloud environment — use browser mic instead"
     try:
         with sr.Microphone() as source:
             recognizer.adjust_for_ambient_noise(source, duration=0.5)
