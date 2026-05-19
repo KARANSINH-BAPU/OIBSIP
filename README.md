@@ -196,7 +196,7 @@ This project was developed as part of the **Oasis Infobyte Python Programming In
 
 <div align="center">
 
-Made with ❤️ by **SOLANKI KARANSINH**
+**SOLANKI KARANSINH**
 
 🌐 **[Try NOVA Live →](https://nova-ai-assitance.vercel.app/)**
 
